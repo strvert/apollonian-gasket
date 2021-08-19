@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "sourceMap": true,
+        "target": "ES6",
+        "moduleResolution": "node",
+        "module": "ES2020",
+        "strict": true,
+        "lib": [
+            "es6",
+            "dom"
+        ]
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

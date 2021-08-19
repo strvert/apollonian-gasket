@@ -1,0 +1,30 @@
+html {
+    inline-size: 100%;
+    block-size: 100%;
+}
+
+body {
+    inline-size: 100%;
+    block-size: 100%;
+
+    position: relative;
+}
+
+#canvas {
+    inline-size: 100%;
+    block-size: 100%;
+}
+
+#apollonian-gasket {
+    header {
+        position: absolute;
+    }
+}
+
+#controller {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+
+    display: flex;
+}
