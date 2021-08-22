@@ -25,6 +25,16 @@ body {
 
         h1 {
             color: #444444;
+            @media screen and (max-width: 1000px) {
+                font-size: 20px;
+                line-height: 20px;
+                margin: 7px;
+            }
+            @media screen and (min-width: 1001px) {
+                font-size: 30px;
+                line-height: 30px;
+                margin: 7px;
+            }
         }
     }
 }

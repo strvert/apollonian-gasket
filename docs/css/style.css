@@ -27,6 +27,20 @@ body {
 #apollonian-gasket header h1 {
   color: #444444;
 }
+@media screen and (max-width: 1000px) {
+  #apollonian-gasket header h1 {
+    font-size: 20px;
+    line-height: 20px;
+    margin: 7px;
+  }
+}
+@media screen and (min-width: 1001px) {
+  #apollonian-gasket header h1 {
+    font-size: 30px;
+    line-height: 30px;
+    margin: 7px;
+  }
+}
 
 #controller {
   display: flex;
