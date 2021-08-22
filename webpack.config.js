@@ -15,7 +15,7 @@ const config = {
 
     devServer: {
         static: {
-            directory: "dist"
+            directory: "docs"
         },
         devMiddleware: {
             writeToDisk: true,
@@ -27,7 +27,7 @@ const config = {
     entry: "./src/scripts/index.ts",
 
     output: {
-        path: path.resolve(__dirname, "dist"),
+        path: path.resolve(__dirname, "docs"),
         filename: "js/main.js",
     },
 
