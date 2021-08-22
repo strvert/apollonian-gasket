@@ -43,7 +43,11 @@ body {
     background-color: rgba(128, 128, 128, 0.3);
 
     width: 100vw;
-    height: 40px;
+    @media screen and (max-width: 457px) {
+        .desktop-only {
+            display: none;
+        }
+    }
 
     button {
         margin: 5px;

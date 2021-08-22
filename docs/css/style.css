@@ -39,7 +39,11 @@ body {
   justify-content: space-between;
   background-color: rgba(128, 128, 128, 0.3);
   width: 100vw;
-  height: 40px;
+}
+@media screen and (max-width: 457px) {
+  #controller .desktop-only {
+    display: none;
+  }
 }
 #controller button {
   margin: 5px;
