@@ -1,116 +1,171 @@
-import { CircleId } from "./shape_data";
+import {CircleId, ParentCirclesData, Vector2d} from "./shape_data";
 import CircleData from "./shape_data";
+import {PausableRecursiveRunner} from "./pausable_recursive_runner";
 import * as math from "mathjs";
 
-export default class ApollonianController {
-    adjacencyList: Map<CircleId, Set<CircleId>>;
-    step: number;
-    circleIdHead: CircleId;
-    circles: Map<number, CircleData>;
+type ApollonianArgs = {
+    depth: number;
+    parentCircles: Readonly<ParentCirclesData>;
+    childCircle?: Readonly<CircleData>;
+};
 
-    constructor(initialCircles: Array<CircleData>) {
+export default class ApollonianController extends PausableRecursiveRunner<ApollonianArgs> {
+    private circleIdHead: CircleId;
+    private circles: Map<CircleId, CircleData>;
+    private newcircles: Array<CircleId>;
+    private adjacencyList: Map<CircleId, Set<CircleId>>;
+    private radiusMin: number;
+
+    private completed: boolean;
+
+    constructor(args: Readonly<ApollonianArgs>) {
+        super(args);
         this.adjacencyList = new Map();
-        this.step = 0;
+        this.depth = 0;
         this.circleIdHead = 0;
         this.circles = new Map();
+        this.newcircles = new Array();
+        this.radiusMin = 0.001;
+        this.completed = false;
 
-        this.registerAdjacentCircles(initialCircles);
+        this.registerInitCircles(args.parentCircles);
     }
 
-    getNextId(): CircleId {
+    private getNextId(): CircleId {
         return this.circleIdHead++;
     }
 
-    printAdjacencyList() {
-        let str = "adjacencyList: \n";
-        for (let k of this.adjacencyList.keys()) {
-            str += `\t${k.toString()} => ( `;
-            for (let v of this.adjacencyList.get(k)!) {
-                str += `${v.toString()} `;
-            }
-            str += ")\n";
-        }
-        console.log(str);
-    }
+    private registerInitCircles(parents: Readonly<ParentCirclesData>) {
+        // sort by curvature
+        let sortedParents: ParentCirclesData = [...parents];
+        sortedParents.sort((a, b) => {
+            if (a.curvature < b.curvature) return -1;
+            if (a.curvature > b.curvature) return 1;
+            return 0;
+        });
 
-    registerAdjacentCircles(data: Array<CircleData>) {
-        for (let ck of data) {
-            if (ck.id === null) {
-                ck.id = this.getNextId();
-            }
-            for (let cv of data) {
-                if (ck === cv) {
+        parents = <ParentCirclesData>parents.map((e) => {
+            e.id = this.getNextId();
+            e.depth = 1;
+            return e;
+        });
+
+        parents.forEach((e) => {
+            this.circles.set(e.id!, e);
+            this.adjacencyList.set(e.id!, new Set())
+        });
+
+        for (const a of parents) {
+            for (const b of parents) {
+                if (a === b) {
                     continue;
                 }
-                if (cv.id === null) {
-                    cv.id = this.getNextId();
-                }
-
-                // register circle list
-                if (!this.circles.has(cv.id)) {
-                    this.circles.set(cv.id, cv);
-                }
-
-                // register adjacency list
-                if (!this.adjacencyList.has(ck.id)) {
-                    this.adjacencyList.set(ck.id, new Set())
-                }
-                this.adjacencyList.get(ck.id)!.add(cv.id);
+                this.adjacencyList.get(a.id!)!.add(b.id!);
             }
         }
-        console.log("list: ", this.circles);
-        this.printAdjacencyList();
+    }
+
+    private registerCircle(circle: CircleData) {
+        if (circle.id !== undefined) {
+            this.circles.set(circle.id, circle);
+        } else {
+            console.error("circle id is undefined");
+        }
+    }
+
+    private CircleIdsToDataArray(ids: Readonly<Array<CircleId>>): Array<CircleData> {
+        return <Array<CircleData>>ids.map((e) => this.circles.get(e));
     }
 
     getAllCircles(): Array<CircleData> {
         return Array.from(this.circles.values());
     }
 
-    next(): Array<CircleData> {
-        let newCircles = new Array<CircleData>();
-        console.debug(`start: step ${this.step}`);
-        if (this.step == 0) {
-            newCircles = Array.from(this.circles.values());
-        } else {
-            const c1 = this.circles.get(0)!;
-            const c2 = this.circles.get(1)!;
-            const c3 = this.circles.get(2)!;
-
-            // calc circle
-            const nc = ApollonianController.calcCircleOfApollinius(c1, c2, c3);
-            if (this.step == 1) {
-                newCircles = newCircles.concat(nc);
-                this.registerAdjacentCircles(new Array(c1, c2, c3, nc[0]));
-                this.registerAdjacentCircles(new Array(c1, c2, c3, nc[1]));
-            } else {
-                newCircles.push(nc[0]);
-                this.registerAdjacentCircles(new Array(c1, c2, c3, nc[0]));
-            }
-            console.log("new circles: ", newCircles);
-        }
-        console.log(`step ${this.step}: Added ${newCircles.length} circles`);
-        this.step += 1;
-        return newCircles;
+    getNewCircles(): Array<CircleData> {
+        return Array.from(this.CircleIdsToDataArray(this.newcircles));
     }
 
-    static calcCircleOfApollinius(c1: CircleData, c2: CircleData, c3: CircleData): Array<CircleData> {
-        const k1 = c1.curvature;
-        const k2 = c2.curvature;
-        const k3 = c3.curvature;
-        const z1 = c1.coord;
-        const z2 = c2.coord;
-        const z3 = c3.coord;
+    isCompleted() {
+        return this.completed;
+    }
 
-        const k4 = k1 + k2 + k3 + 2 * Math.sqrt(k1 * k2 + k2 * k3 + k3 * k1);
-        const z4NumP1 = math.add(math.add(math.multiply(z1, k1), math.multiply(z2, k2)), math.multiply(z3, k3));
-        const z4NumP2 = math.multiply(2,
-            math.sqrt(<math.Complex>(math.add(math.add(math.multiply(k1 * k2, math.multiply(z1, z2)),
-                math.multiply(k2 * k3, math.multiply(z2, z3))),
-                math.multiply(k1 * k3, math.multiply(z1, z3))))));
+    protected proc(args: Readonly<ApollonianArgs>, pauseDepth: Readonly<number>, holder: Array<ApollonianArgs>): boolean {
+        if (!super.proc(args, pauseDepth, holder)) {
+            return false;
+        }
 
-        const z4Plus = math.divide(math.add(z4NumP1, z4NumP2), k4);
-        const z4Minus = math.divide(math.subtract(z4NumP1, z4NumP2), k4);
-        return new Array(new CircleData((<math.Complex>z4Plus).re, (<math.Complex>z4Plus).im, k4),
-            new CircleData((<math.Complex>z4Minus).re, (<math.Complex>z4Minus).im, k4));
+        const [c1, c2, c3] = args.parentCircles;
+        if (args.depth === 0) {
+            const c4 = this.calcAdjacentCircle([c1, c2, c3]);
+            const c5 = this.calcOtherCircle([c2, c3, c4], c1);
+            this.registerCircle(c4);
+            this.registerCircle(c5);
+
+            Array.prototype.push.apply(this.newcircles, Array.from(this.circles.keys()));
+            this.proc({depth: args.depth + 1, parentCircles: [c2, c3, c4], childCircle: c1}, pauseDepth, holder);
+            this.proc({depth: args.depth + 1, parentCircles: [c2, c3, c4], childCircle: c5}, pauseDepth, holder);
+        } else {
+            // ここから
+            if (args.childCircle === undefined) {
+                console.error(args.childCircle);
+            } else {
+                const c4 = args.childCircle;
+                const regi = (c: CircleData) => {
+                    this.registerCircle(c);
+                    this.newcircles.push(c.id!);
+                }
+                const c5 = this.calcOtherCircle([c1, c2, c4], c3);
+                regi(c5);
+                const c6 = this.calcOtherCircle([c1, c3, c4], c2);
+                regi(c6);
+                const c7 = this.calcOtherCircle([c3, c2, c4], c1);
+                regi(c7);
+
+                if (c5.getRadius() >= this.radiusMin) {
+                    this.proc({depth: args.depth + 1, parentCircles: [c1, c2, c4], childCircle: c5}, pauseDepth, holder);
+                }
+                if (c6.getRadius() >= this.radiusMin) {
+                    this.proc({depth: args.depth + 1, parentCircles: [c1, c3, c4], childCircle: c6}, pauseDepth, holder);
+                }
+                if (c7.getRadius() >= this.radiusMin) {
+                    this.proc({depth: args.depth + 1, parentCircles: [c3, c2, c4], childCircle: c7}, pauseDepth, holder);
+                }
+            }
+        }
+        return true;
+    }
+
+    calcOtherCircle(parents: Readonly<ParentCirclesData>, child1: CircleData): CircleData {
+        const c = 2 * (parents[0].curvature + parents[1].curvature + parents[2].curvature) - child1.curvature;
+        const f = parents.map((e) => e.coord.map((f) => e.curvature * f));
+        const p = <Vector2d>math.divide(math.subtract(math.multiply(2, math.add(math.add(f[0], f[1]), f[2])), [child1.coord[0] * child1.curvature, child1.coord[1] * child1.curvature]), c);
+        return new CircleData(p, c, this.getNextId());
+    }
+
+    calcAdjacentCircle(parents: Readonly<ParentCirclesData>): CircleData {
+        const ks = parents.map((e) => e.curvature);
+        const k4 = this.solve(ks[0], ks[1], ks[2]);
+
+        const f1 = parents.map((e) => e.coord.map((f) => e.curvature * f));
+        const f2 = f1.map((e) => math.complex(e[0], e[1]));
+        const pos = <math.Complex>math.divide(this.solve(f2[0], f2[1], f2[2]), k4);
+
+        return new CircleData([pos.re, pos.im], k4, this.getNextId());
+    }
+
+    private solve<T extends math.Complex | number>(k1: T, k2: T, k3: T): T {
+        const s = math.chain(k1).add(k2).add(k3).done();
+        const k1k2 = math.chain(k1).multiply(k2).done();
+        const k2k3 = math.chain(k2).multiply(k3).done();
+        const k3k1 = math.chain(k3).multiply(k1).done();
+
+        const inner = <T>math.chain(k1k2).add(k2k3).add(k3k1).done();
+        const f = typeof inner === "number" ? math.sqrt(<number>inner) : math.sqrt(<math.Complex>inner);
+        return <T>math.add(s, math.multiply(f, 2));
+    }
+
+    run(pauseDepth: Readonly<number>) {
+        this.newcircles = [];
+        super.run(pauseDepth);
     }
 };

@@ -1,23 +1,26 @@
-import * as math from "mathjs";
-
 export type CircleId = number;
+export type ParentCirclesId = [CircleId, CircleId, CircleId];
+export type ParentCirclesData = [CircleData, CircleData, CircleData];
+export type Vector2d = [number, number];
 
 export default class CircleData {
-    id: CircleId | null;
-    coord: math.Complex;
+    id: CircleId | undefined;
+    coord: Vector2d;
     curvature: number;
+    depth: number;
 
-    constructor(x: number, y: number, curvature: number) {
-        this.id = null;
-        this.coord = math.complex(x, y);
+    constructor(coord: Vector2d, curvature: number, id?: number) {
+        this.id = id;
+        this.coord = coord;
         this.curvature = curvature;
+        this.depth = 0;
     }
 
-    getRadius() {
+    getRadius(): number {
         return Math.abs(1 / this.curvature);
     }
 
-    static fromCurvature(x: number, y: number, curvature: number): CircleData {
-        return new CircleData(x, y, curvature);
+    static fromCurvature(coord: Vector2d, curvature: number): CircleData {
+        return new CircleData(coord, curvature);
     }
 };
