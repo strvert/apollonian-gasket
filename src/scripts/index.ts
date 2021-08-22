@@ -7,7 +7,6 @@ import {ParentCirclesData} from "./shape_data";
 import ApollonianController from "./apollonian_controller";
 
 const circleConfig: Konva.CircleConfig = {strokeWidth: 2, stroke: "gray"};
-const drawScale = 450;
 
 const firstCirclePatterns = new Map<string, ParentCirclesData>([
     ["pattern1", [
@@ -16,10 +15,15 @@ const firstCirclePatterns = new Map<string, ParentCirclesData>([
         CircleData.fromCurvature([-0.5, 0], 2),
     ]],
     ["pattern2", [
-        CircleData.fromCurvature([0, 0], -3),
-        CircleData.fromCurvature([-0.083, 0], 4),
-        CircleData.fromCurvature([0.25, 0], 12),
-    ]]
+        CircleData.fromCurvature([0, 0], -6),
+        CircleData.fromCurvature([-0.06666, 0], 10),
+        CircleData.fromCurvature([0.099999, 0], 15),
+    ]],
+    ["pattern3", [
+        CircleData.fromCurvature([0, 0], -12),
+        CircleData.fromCurvature([0.0476, 0], 28),
+        CircleData.fromCurvature([-0.0129, 0.0429], 26),
+    ]],
 ]);
 
 function init() {
@@ -69,7 +73,6 @@ function getMaxCircle(circles: Readonly<Array<CircleData>>): CircleData {
 function calcDrawScale(circles: Readonly<Array<CircleData>>): number {
     const maxC = getMaxCircle(circles);
     const minV = getMinV();
-    console.log(minV, maxC.getRadius());
 
     return (minV - (minV > 100 ? 100 : 0)) / (maxC.getRadius() * 2);
 }
