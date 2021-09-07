@@ -1,5 +1,5 @@
 # ApollonianGasket
-アポロニウスのギャスケットを描くやつ。Webフロントのツールチェインを軽く学んだため、試しに作成したプロジェクト。
+フラクタル図形の一種であるアポロニウスのギャスケットを描くやつ。Webフロントのツールチェインを軽く学んだため、試しに作成したプロジェクト。
 
 page: https://strvworks.github.io/ApollonianGasket/
 
